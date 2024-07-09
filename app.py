@@ -203,6 +203,7 @@ def update_info():
     return jsonify({"success": success, "message": message, "data": data})
 
 @app.route('/get_user_data', methods=['POST'])
+@csrf.exempt  # Desativar CSRF para a rota de login
 def get_user_data():
     logging.info("Rota '/get_user_data' chamada.")  # Log para verificar a chamada da função
     if not is_logged_in():
