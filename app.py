@@ -204,11 +204,15 @@ def update_info():
 
 @app.route('/get_user_data', methods=['POST'])
 def get_user_data():
+    logging.info("Rota '/get_user_data' chamada.")  # Log para verificar a chamada da função
     if not is_logged_in():
+        logging.error("Usuário não autenticado.")
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
 
     try:
         data = request.get_json()
+        logging.info(f"Dados recebidos na requisição: {data}")  # Log dos dados recebidos
+
         if data is None:
             logging.error("Nenhum dado recebido na requisição.")
             return jsonify({"status": "error", "message": "Dados da requisição ausentes."}), 400
@@ -218,28 +222,30 @@ def get_user_data():
             logging.error("Campo 'login' ausente na requisição.")
             return jsonify({"status": "error", "message": "Campo 'login' ausente."}), 400
         
-        debug_log(f"Recebendo dados do usuário: {login}")
+        logging.info(f"Processando dados para o usuário: {login}")  # Log do login recebido
         
         ano_escolar_id, nome = get_ano_escola_id_usuario(login)
-        debug_log(f"ano_escolar_id para o usuário {login}: {ano_escolar_id}, nome: {nome}")
         if not ano_escolar_id:
+            logging.error(f"Ano escolar não encontrado para o usuário {login}")
             return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
         
+        logging.info(f"Ano escolar ID para o usuário {login}: {ano_escolar_id}, Nome: {nome}")
+        
         trimestres, materias, calculos = get_periodos_materias(ano_escolar_id)
-        debug_log(f"Trimestres obtidos: {trimestres}\nMatérias obtidas: {materias}")
+        logging.info(f"Trimestres: {trimestres}, Matérias: {materias}")
         
         notas = get_notas_aluno(login)
-        debug_log(f"Notas obtidas: {notas}")
+        logging.info(f"Notas: {notas}")
         
         medias = get_medias_aluno(login)
-        debug_log(f"Médias obtidas: {medias}")
+        logging.info(f"Médias: {medias}")
 
         componentes = {}
         for materia_id in materias.keys():
             componentes_materia = get_componentes_materia(materia_id)
             if componentes_materia:
                 componentes.update(componentes_materia)
-        debug_log(f"Componentes obtidos: {componentes}")
+        logging.info(f"Componentes: {componentes}")
 
         return jsonify({
             "status": "success",
