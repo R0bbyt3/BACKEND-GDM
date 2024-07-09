@@ -22,16 +22,8 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
 csrf = CSRFProtect(app)
 CORS(app)
 
-# Configuração do logger para incluir mensagens de debug
-logging.basicConfig(level=logging.INFO)
-
-# Variável para controle de debug
-DEBUG_MODE = os.getenv('DEBUG_MODE', 'True') == 'True'
-
-def debug_log(message):
-    """Função para logs de depuração detalhados"""
-    if DEBUG_MODE:
-        logging.info(message)
+# Configuração do logger para produção
+logging.basicConfig(level=logging.ERROR)
 
 def login_user(login):
     session['user'] = login
@@ -69,16 +61,13 @@ def csrf_token():
 
 # Rota para criar conta
 @app.route('/create_account', methods=['POST'])
-@csrf.exempt  # Exemplo de como desativar CSRF para uma rota específica (não recomendado)
 def create_account():
     # Recebe os dados JSON do cliente
     data = request.json
-    debug_log(f"Dados recebidos para criação de conta: {data}")
     
     # Valida os dados recebidos
     validation_errors = validate_input(data, UserSchema)
-    if (validation_errors):
-        debug_log(f"Erros de validação: {validation_errors}")
+    if validation_errors:
         return jsonify({"success": False, "message": validation_errors}), 400
 
     login = escape(data.get('login'))
@@ -87,23 +76,18 @@ def create_account():
     driver = init_driver()
 
     try:
-        debug_log("Iniciando processo de criação de conta...")
         ano_escolar, nome = perform_login(driver, login, senha)  # Extraindo ano escolar e nome
-        debug_log(f"Credenciais válidas, procedendo com a criação de conta com ano escolar: {ano_escolar} e nome: {nome}")
 
         ano_escolar_id = check_and_add_school_year(ano_escolar)
-        debug_log(f"Ano escolar ID obtido: {ano_escolar_id}")
 
         if check_and_add_user(login, senha, ano_escolar_id, nome):
             data = extract_grades(driver, login, ano_escolar_id)
             message = "Conta criada com sucesso, notas extraídas e salvas."
             success = True
-            debug_log("Conta criada e dados extraídos com sucesso.")
         else:
             message = "Conta já existe."
             success = False
             data = None
-            debug_log("Conta já existe no sistema.")
     except Exception as e:
         message = f"Erro: {e}"
         success = False
@@ -116,16 +100,13 @@ def create_account():
 
 # Rota para login
 @app.route('/login', methods=['POST'])
-@csrf.exempt  # Desativar CSRF para a rota de login
 def login_route():
     # Recebe os dados JSON do cliente
     data = request.json
-    debug_log(f"Dados recebidos para login: {data}")
     
     # Valida os dados recebidos
     validation_errors = validate_input(data, UserSchema)
     if validation_errors:
-        debug_log(f"Erros de validação: {validation_errors}")
         return jsonify({"success": False, "message": validation_errors}), 400
 
     login = escape(data.get('login'))
@@ -139,12 +120,10 @@ def login_route():
             message = "Login bem-sucedido."
             success = True
             ano_escola_id = user_doc.to_dict()['ano_escola_id']
-            debug_log(f"Login bem-sucedido para usuário: {login}, ano_escola_id: {ano_escola_id}")
         else:
             message = "Usuário ou senha inválidos."
             success = False
             ano_escola_id = None
-            debug_log("Usuário ou senha inválidos.")
     except Exception as e:
         message = f"Erro: {e}"
         success = False
@@ -164,7 +143,6 @@ def logout():
 
 # Rota para atualizar informações
 @app.route('/update_info', methods=['POST'])
-@csrf.exempt  # Desativar CSRF para a rota de atualização de informações
 def update_info():
     if not is_logged_in():
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
@@ -176,22 +154,16 @@ def update_info():
     ano_escolar = escape(data.get('ano_escolar'))
     ano_atual = escape(data.get('ano_atual'))
 
-    debug_log(f"Iniciando atualização de informações para: login={login}, ano_escolar={ano_escolar}, ano_atual={ano_atual}")
-
     driver = init_driver()
 
     try:
-        debug_log("Iniciando processo de atualização de informações...")
         perform_login(driver, login, senha)
-        debug_log("Login bem-sucedido, redirecionado para a página principal...")
 
         ano_escolar_id = check_and_add_school_year(ano_escolar)
-        debug_log(f"Ano escolar ID obtido: {ano_escolar_id}")
 
         data = extract_grades(driver, login, ano_escolar_id)
         message = "Informações atualizadas com sucesso."
         success = True
-        debug_log("Informações atualizadas com sucesso.")
     except Exception as e:
         message = f"Erro: {e}"
         success = False
@@ -203,50 +175,33 @@ def update_info():
     return jsonify({"success": success, "message": message, "data": data})
 
 @app.route('/get_user_data', methods=['POST'])
-@csrf.exempt  # Desativar CSRF para a rota de login
 def get_user_data():
-    logging.info("Rota '/get_user_data' chamada.")  # Log para verificar a chamada da função
     if not is_logged_in():
-        logging.error("Usuário não autenticado.")
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
 
     try:
         data = request.get_json()
-        logging.info(f"Dados recebidos na requisição: {data}")  # Log dos dados recebidos
 
         if data is None:
-            logging.error("Nenhum dado recebido na requisição.")
             return jsonify({"status": "error", "message": "Dados da requisição ausentes."}), 400
         
         login = escape(data.get('login'))
         if not login:
-            logging.error("Campo 'login' ausente na requisição.")
             return jsonify({"status": "error", "message": "Campo 'login' ausente."}), 400
-        
-        logging.info(f"Processando dados para o usuário: {login}")  # Log do login recebido
         
         ano_escolar_id, nome = get_ano_escola_id_usuario(login)
         if not ano_escolar_id:
-            logging.error(f"Ano escolar não encontrado para o usuário {login}")
             return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
         
-        logging.info(f"Ano escolar ID para o usuário {login}: {ano_escolar_id}, Nome: {nome}")
-        
         trimestres, materias, calculos = get_periodos_materias(ano_escolar_id)
-        logging.info(f"Trimestres: {trimestres}, Matérias: {materias}")
-        
         notas = get_notas_aluno(login)
-        logging.info(f"Notas: {notas}")
-        
         medias = get_medias_aluno(login)
-        logging.info(f"Médias: {medias}")
 
         componentes = {}
         for materia_id in materias.keys():
             componentes_materia = get_componentes_materia(materia_id)
             if componentes_materia:
                 componentes.update(componentes_materia)
-        logging.info(f"Componentes: {componentes}")
 
         return jsonify({
             "status": "success",
@@ -264,4 +219,4 @@ def get_user_data():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=DEBUG_MODE)
+    app.run(host='0.0.0.0', port=5000)
