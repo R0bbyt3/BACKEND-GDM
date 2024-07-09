@@ -20,7 +20,7 @@ import os
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
 csrf = CSRFProtect(app)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Configuração do logger para produção
 logging.basicConfig(level=logging.ERROR)
@@ -61,6 +61,7 @@ def csrf_token():
 
 # Rota para criar conta
 @app.route('/create_account', methods=['POST'])
+@csrf.exempt
 def create_account():
     # Recebe os dados JSON do cliente
     data = request.json
@@ -100,6 +101,7 @@ def create_account():
 
 # Rota para login
 @app.route('/login', methods=['POST'])
+@csrf.exempt
 def login_route():
     # Recebe os dados JSON do cliente
     data = request.json
@@ -134,6 +136,7 @@ def login_route():
 
 # Rota para logout
 @app.route('/logout', methods=['POST'])
+@csrf.exempt
 def logout():
     if not is_logged_in():
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
@@ -143,6 +146,7 @@ def logout():
 
 # Rota para atualizar informações
 @app.route('/update_info', methods=['POST'])
+@csrf.exempt
 def update_info():
     if not is_logged_in():
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
@@ -175,6 +179,7 @@ def update_info():
     return jsonify({"success": success, "message": message, "data": data})
 
 @app.route('/get_user_data', methods=['POST'])
+@csrf.exempt
 def get_user_data():
     if not is_logged_in():
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
