@@ -14,7 +14,7 @@ from firebase_utils import (
     get_notas_aluno,
     db
 )
-from selenium_utils import init_driver, perform_login, extract_grades
+from selenium_utils import init_driver, perform_login, extract_grades, extract_school_year
 import os
 
 app = Flask(__name__)
@@ -150,19 +150,18 @@ def logout():
 def update_info():
     if not is_logged_in():
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
-    
+
     # Recebe os dados JSON do cliente
     data = request.json
     login = escape(data.get('login'))
     senha = escape(data.get('senha'))
-    ano_escolar = escape(data.get('ano_escolar'))
-    ano_atual = escape(data.get('ano_atual'))
 
     driver = init_driver()
 
     try:
         perform_login(driver, login, senha)
 
+        ano_escolar = extract_school_year(driver)
         ano_escolar_id = check_and_add_school_year(ano_escolar)
 
         data = extract_grades(driver, login, ano_escolar_id)
