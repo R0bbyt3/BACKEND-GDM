@@ -31,14 +31,13 @@ def strip_whitespace(data, keys):
             data[key] = data[key].strip()
     return data
 
-
 def capitalize_component_name(value):
     """
     Capitaliza a primeira letra de cada palavra em uma string, deixando as outras letras em minúsculo.
-    
+
     Args:
         value (str): A string a ser capitalizada.
-    
+
     Returns:
         str: A string com a primeira letra de cada palavra capitalizada.
     """

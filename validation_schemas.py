@@ -1,5 +1,4 @@
 from marshmallow import Schema, fields, validate, ValidationError
-from utils import strip_whitespace
 
 class UserSchema(Schema):
     """
@@ -29,10 +28,7 @@ def validate_input(data, schema):
     Returns:
         None se os dados forem válidos.
         dict com mensagens de erro se os dados forem inválidos.
-    """
-    # Remove espaços em branco dos campos 'login' e 'senha'
-    data = strip_whitespace(data, ['login', 'senha'])
-    
+    """    
     try:
         # Carrega e valida os dados usando o esquema fornecido
         schema().load(data)
