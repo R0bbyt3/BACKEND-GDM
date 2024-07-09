@@ -205,61 +205,7 @@ def update_info():
 @app.route('/get_user_data', methods=['POST'])
 def get_user_data():
     logging.info("Rota '/get_user_data' chamada.")  # Log para verificar a chamada da função
-    if not is_logged_in():
-        logging.error("Usuário não autenticado.")
-        return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
 
-    try:
-        data = request.get_json()
-        logging.info(f"Dados recebidos na requisição: {data}")  # Log dos dados recebidos
-
-        if data is None:
-            logging.error("Nenhum dado recebido na requisição.")
-            return jsonify({"status": "error", "message": "Dados da requisição ausentes."}), 400
-        
-        login = escape(data.get('login'))
-        if not login:
-            logging.error("Campo 'login' ausente na requisição.")
-            return jsonify({"status": "error", "message": "Campo 'login' ausente."}), 400
-        
-        logging.info(f"Processando dados para o usuário: {login}")  # Log do login recebido
-        
-        ano_escolar_id, nome = get_ano_escola_id_usuario(login)
-        if not ano_escolar_id:
-            logging.error(f"Ano escolar não encontrado para o usuário {login}")
-            return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
-        
-        logging.info(f"Ano escolar ID para o usuário {login}: {ano_escolar_id}, Nome: {nome}")
-        
-        trimestres, materias, calculos = get_periodos_materias(ano_escolar_id)
-        logging.info(f"Trimestres: {trimestres}, Matérias: {materias}")
-        
-        notas = get_notas_aluno(login)
-        logging.info(f"Notas: {notas}")
-        
-        medias = get_medias_aluno(login)
-        logging.info(f"Médias: {medias}")
-
-        componentes = {}
-        for materia_id in materias.keys():
-            componentes_materia = get_componentes_materia(materia_id)
-            if componentes_materia:
-                componentes.update(componentes_materia)
-        logging.info(f"Componentes: {componentes}")
-
-        return jsonify({
-            "status": "success",
-            "trimestres": trimestres,
-            "materias": materias,
-            "notas": notas,
-            "medias": medias,
-            "componentes": componentes,
-            "calculos": calculos,
-            "nome": nome  
-        })
-    except Exception as e:
-        logging.error(f"Erro durante a obtenção de dados do usuário: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == '__main__':
