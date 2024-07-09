@@ -208,9 +208,15 @@ def get_user_data():
         return jsonify({"success": False, "message": "Usuário não autenticado."}), 401
 
     try:
-        # Recebe os dados JSON do cliente
         data = request.get_json()
-        login = escape(data['login'])
+        if data is None:
+            logging.error("Nenhum dado recebido na requisição.")
+            return jsonify({"status": "error", "message": "Dados da requisição ausentes."}), 400
+        
+        login = escape(data.get('login'))
+        if not login:
+            logging.error("Campo 'login' ausente na requisição.")
+            return jsonify({"status": "error", "message": "Campo 'login' ausente."}), 400
         
         debug_log(f"Recebendo dados do usuário: {login}")
         
@@ -220,21 +226,20 @@ def get_user_data():
             return jsonify({"status": "error", "message": "Ano escolar não encontrado para o usuário"}), 404
         
         trimestres, materias, calculos = get_periodos_materias(ano_escolar_id)
-        debug_log(f"Trimestres obtidos: {trimestres}\n\n")
-        debug_log(f"Matérias obtidas: {materias}\n\n")
+        debug_log(f"Trimestres obtidos: {trimestres}\nMatérias obtidas: {materias}")
         
         notas = get_notas_aluno(login)
-        debug_log(f"Notas obtidas: {notas}\n\n")
+        debug_log(f"Notas obtidas: {notas}")
         
         medias = get_medias_aluno(login)
-        debug_log(f"Médias obtidas: {medias}\n\n")
+        debug_log(f"Médias obtidas: {medias}")
 
         componentes = {}
         for materia_id in materias.keys():
             componentes_materia = get_componentes_materia(materia_id)
             if componentes_materia:
                 componentes.update(componentes_materia)
-        debug_log(f"Componente obtidos: {componentes}\n\n")
+        debug_log(f"Componentes obtidos: {componentes}")
 
         return jsonify({
             "status": "success",
@@ -249,6 +254,7 @@ def get_user_data():
     except Exception as e:
         logging.error(f"Erro durante a obtenção de dados do usuário: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=DEBUG_MODE)
